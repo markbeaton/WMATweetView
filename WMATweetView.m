@@ -281,6 +281,7 @@
 
 - (CGSize)sizeThatFits:(CGSize)size
 {
+	size.height = CGFLOAT_MAX;
 	return CTFramesetterSuggestFrameSizeWithConstraints(self.framesetter, CFRangeMake(0, 0), NULL, size, NULL);
 }
 
