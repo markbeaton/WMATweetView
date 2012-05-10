@@ -636,7 +636,7 @@
 {
 	SAFE_ARC_RELEASE(_name);
 	SAFE_ARC_RELEASE(_screenName);
-	SAFE_ARC_RELEASE(_id);
+	SAFE_ARC_RELEASE(_idString);
 	SAFE_ARC_SUPER_DEALLOC();
 }
 
