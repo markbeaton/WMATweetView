@@ -108,9 +108,9 @@
 @end
 
 @interface WMATweetView : UIView
-typedef void (^URLEntityTappedCallbackBlock)(WMATweetURLEntity *, NSUInteger numberOfTouches);
-typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetHashtagEntity *, NSUInteger numberOfTouches);
-typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *, NSUInteger numberOfTouches);
+typedef void (^URLEntityTappedCallbackBlock)(WMATweetURLEntity *entity, NSUInteger numberOfTouches);
+typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetHashtagEntity *entity, NSUInteger numberOfTouches);
+typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *entity, NSUInteger numberOfTouches);
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSString *text;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *entities;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIColor *textColor;
