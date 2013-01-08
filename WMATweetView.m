@@ -293,9 +293,9 @@
 		[self.backgroundColor set];
 		CGContextFillRect(context, rect);
 		CGContextTranslateCTM(context, 0.0f, rect.size.height);
-    CGContextScaleCTM(context, 1.0f, -1.0f);
-    CGMutablePathRef path = CGPathCreateMutable();
-    CGPathAddRect(path, NULL, rect);
+		CGContextScaleCTM(context, 1.0f, -1.0f);
+		CGMutablePathRef path = CGPathCreateMutable();
+		CGPathAddRect(path, NULL, rect);
 		CTFrameRef frame = CTFramesetterCreateFrame(self.framesetter, CFRangeMake(0, 0), path, NULL);
 		CTFrameDraw(frame, context);
 		CFRelease(frame);
