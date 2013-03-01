@@ -11,7 +11,7 @@ It parses the following tweet entities & provides callbacks for tap gestures:
 
 The callbacks are passed an instance of a WMATweetEntity subclass that contains all of the data you'll need to process the tap according to Twitter's guidelines.
 
-Encoded ampersands (&amp;amp;) are also replaced with plain & character.
+Encoded ampersands (&amp;amp;) are also replaced with a plain "&" character.
 
 **Note: this view only renders the tweet text - you're responsible for adding avatars, author names, dates etc. But that's the easy part! Example:**
 
