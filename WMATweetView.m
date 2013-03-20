@@ -111,8 +111,32 @@
 	{
 		[self setupDefaults];
 		self.text = [tweet valueForKey:@"text"];
+        
+        NSString *str = self.text;
+        NSString *searchString = @"&amp;";
+        NSMutableArray *amps = [NSMutableArray array];
+        NSRange searchRange = NSMakeRange(0, [str length]);
+        NSRange range;
+        while ((range = [str rangeOfString:searchString options:0 range:searchRange]).location != NSNotFound) {
+            
+            NSNumber *start = [NSNumber numberWithInteger:range.location];
+            NSNumber *end = [NSNumber numberWithInteger:range.location+range.length];
+            NSArray *ampIndices = [[NSArray alloc] initWithObjects: start, end, nil];
+            
+            NSDictionary *ampEntity = [[NSDictionary alloc] initWithObjectsAndKeys:ampIndices, @"indices", nil];
+            
+            [amps addObject:ampEntity];
+            
+            searchRange = NSMakeRange(NSMaxRange(range), [str length] - NSMaxRange(range));
+        }
+        
 		NSMutableArray *entities = [NSMutableArray array];
+        
 		for (NSDictionary *tweetEntity in [[tweet valueForKey:@"entities"] valueForKey:@"urls"])
+		{
+			[entities addObject:[WMATweetURLEntity entityWithURL:[NSURL URLWithString:[tweetEntity valueForKey:@"url"]] expandedURL:[NSURL URLWithString:[tweetEntity valueForKey:@"expanded_url"]] displayURL:[tweetEntity valueForKey:@"display_url"] start:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
+		}
+        for (NSDictionary *tweetEntity in [[tweet valueForKey:@"entities"] valueForKey:@"media"])
 		{
 			[entities addObject:[WMATweetURLEntity entityWithURL:[NSURL URLWithString:[tweetEntity valueForKey:@"url"]] expandedURL:[NSURL URLWithString:[tweetEntity valueForKey:@"expanded_url"]] displayURL:[tweetEntity valueForKey:@"display_url"] start:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
 		}
@@ -124,7 +148,11 @@
 		{
 			[entities addObject:[WMATweetUserMentionEntity entityWithScreenName:[tweetEntity valueForKey:@"screen_name"] name:[tweetEntity valueForKey:@"name"] idString:[tweetEntity valueForKey:@"id_str"] start:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
 		}
-		self.entities = entities;
+        for (NSDictionary *tweetEntity in amps)
+		{
+			[entities addObject:[WMATweetAmpEntity entityWithStart:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
+		}
+		self.entities = entities;        
 	}
 	return self;
 }
@@ -397,7 +425,7 @@
 	if (_attributedString == nil && self.text != nil)
 	{
 		NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:self.text];
-		
+        
 		// We're replacing text in entities, so we need to recalculate ranges
 		if (self.sortedEntities == nil)
 		{
@@ -428,6 +456,14 @@
 					entity.endWithOffset = entity.startWithOffset + [urlEntity.displayURL length];
 					rangeStartOffset += [urlEntity.displayURL length] - range.length;
 				}
+			}
+            else if ([entity isKindOfClass:[WMATweetAmpEntity class]])
+			{
+				NSString *displayAmp = @"&";
+                [attributedString replaceCharactersInRange:range withString:displayAmp];
+                entity.startWithOffset = entity.start + rangeStartOffset;
+                entity.endWithOffset = entity.startWithOffset + [displayAmp length];
+                rangeStartOffset += [displayAmp length] - range.length;
 			}
 			else
 			{
@@ -476,6 +512,11 @@
 			{
 				entityColor = userMentionColor;
 				entityFont = _userMentionFontRef;
+			}
+            else if ([entity isKindOfClass:[WMATweetAmpEntity class]])
+			{
+				entityColor = textColor;
+				entityFont = _textFontRef;
 			}
 			[attributedString addAttribute:(NSString *)kCTForegroundColorAttributeName value:(__bridge id)entityColor.CGColor range:range];
 			[attributedString addAttribute:(NSString *)kCTFontAttributeName value:(__bridge id)entityFont range:range];
@@ -643,6 +684,39 @@
 - (NSString *)description
 {
 	return [NSString stringWithFormat:@"%@,\n  screenName: %@,\n  name: %@,\n  id: %@", [super description], self.screenName, self.name, self.idString];
+}
+
+@end
+
+#pragma mark -
+
+@implementation WMATweetAmpEntity
+
+@synthesize text = _text;
+
++ (WMATweetAmpEntity *)entityWithStart:(NSUInteger)start end:(NSUInteger)end
+{
+	return SAFE_ARC_AUTORELEASE([[WMATweetAmpEntity alloc] initWithText:@"&amp;" start:start end:end]);
+}
+
+- (id)initWithText:(NSString *)text start:(NSUInteger)start end:(NSUInteger)end
+{
+	if ((self = [super initWithStart:start end:end]) != nil)
+	{
+		_text = [text copy];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	SAFE_ARC_RELEASE(_text);
+	SAFE_ARC_SUPER_DEALLOC();
+}
+
+- (NSString *)description
+{
+	return [NSString stringWithFormat:@"%@", [super description]];
 }
 
 @end
