@@ -2,17 +2,17 @@
 // WMATweetView.m
 //
 // Copyright (c) 2012 Mark Beaton. All rights reserved.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,6 +35,7 @@
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSMutableAttributedString *attributedString;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *sortedEntities;
 @property (nonatomic, assign) CTFramesetterRef framesetter;
+@property (nonatomic, SAFE_ARC_PROP_RETAIN) UITapGestureRecognizer* tapGestureRecognizer;
 - (void)setupDefaults;
 - (void)setDirty;
 @end
@@ -152,7 +153,7 @@
 		{
 			[entities addObject:[WMATweetAmpEntity entityWithStart:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
 		}
-		self.entities = entities;        
+		self.entities = entities;
 	}
 	return self;
 }
@@ -335,15 +336,44 @@
 
 #pragma mark UITapGestureRecognizer
 
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    if ( gestureRecognizer == self.tapGestureRecognizer ) {
+        WMATweetEntity* entity = [self entityForGestureRecognizer:self.tapGestureRecognizer];
+        
+        return (entity != nil);
+    } else {
+        return YES;
+    }
+}
+
 - (void)viewTapped:(UITapGestureRecognizer *)tapRecognizer
 {
 	if (tapRecognizer.state != UIGestureRecognizerStateEnded)
 	{
 		return;
 	}
-	CGPoint point = [tapRecognizer locationInView:self];
+    
+    WMATweetEntity* entity = [self entityForGestureRecognizer:tapRecognizer];
+    
+    if ([entity isKindOfClass:[WMATweetURLEntity class]] && self.urlTapped != NULL)
+    {
+        self.urlTapped((WMATweetURLEntity *)entity, tapRecognizer.numberOfTouches);
+    }
+    else if ([entity isKindOfClass:[WMATweetHashtagEntity class]] && self.hashtagTapped != NULL)
+    {
+        self.hashtagTapped((WMATweetHashtagEntity *)entity, tapRecognizer.numberOfTouches);
+    }
+    else if ([entity isKindOfClass:[WMATweetUserMentionEntity class]] && self.userMentionTapped != NULL)
+    {
+        self.userMentionTapped((WMATweetUserMentionEntity *)entity, tapRecognizer.numberOfTouches);
+    }
+}
+
+- (WMATweetEntity*)entityForGestureRecognizer:(UIGestureRecognizer*)gestureRecognizer {
+    WMATweetEntity* returnEntity = nil;
+    CGPoint point = [gestureRecognizer locationInView:self];
 	
-	if (CGRectContainsPoint(self.bounds, point))
+    if (CGRectContainsPoint(self.bounds, point))
 	{
 		point.y = CGRectGetHeight(self.bounds) - point.y;
 		
@@ -372,19 +402,8 @@
 					WMATweetEntity *entity = [attributes objectForKey:@"TweetEntity"];
 					if (entity != nil && entity.startWithOffset <= lineCharIndex && entity.endWithOffset >= lineCharIndex)
 					{
-						if ([entity isKindOfClass:[WMATweetURLEntity class]] && self.urlTapped != NULL)
-						{
-							self.urlTapped((WMATweetURLEntity *)entity, tapRecognizer.numberOfTouches);
-						}
-						else if ([entity isKindOfClass:[WMATweetHashtagEntity class]] && self.hashtagTapped != NULL)
-						{
-							self.hashtagTapped((WMATweetHashtagEntity *)entity, tapRecognizer.numberOfTouches);
-						}
-						else if ([entity isKindOfClass:[WMATweetUserMentionEntity class]] && self.userMentionTapped != NULL)
-						{
-							self.userMentionTapped((WMATweetUserMentionEntity *)entity, tapRecognizer.numberOfTouches);
-						}
-						found = YES;
+                        returnEntity = entity;
+                        found = YES;
 						break;
 					}
 				}
@@ -393,9 +412,10 @@
 		}
 		CFRelease(path);
 		CFRelease(frame);
-	}	
+	}
+    
+    return returnEntity;
 }
-
 
 
 #pragma mark Private implementation
@@ -403,10 +423,9 @@
 - (void)setupDefaults
 {
 	self.backgroundColor = [UIColor whiteColor];
-	UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewTapped:)];
-	tapRecognizer.delegate = self;
-	[self addGestureRecognizer:tapRecognizer];
-	SAFE_ARC_RELEASE(tapRecognizer);
+	self.tapGestureRecognizer = SAFE_ARC_AUTORELEASE([[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewTapped:)]);
+	self.tapGestureRecognizer.delegate = self;
+	[self addGestureRecognizer:self.tapGestureRecognizer];
 }
 
 - (void)setDirty
@@ -430,14 +449,14 @@
 		if (self.sortedEntities == nil)
 		{
 			self.sortedEntities = [self.entities sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
-														 {
-															 if (((WMATweetEntity *)obj1).start < ((WMATweetEntity *)obj2).start)
-																 return NSOrderedAscending;
-															 else if (((WMATweetEntity *)obj1).start > ((WMATweetEntity *)obj2).start)
-																 return NSOrderedDescending;
-															 else
-																 return NSOrderedSame;
-														 }];
+                                   {
+                                       if (((WMATweetEntity *)obj1).start < ((WMATweetEntity *)obj2).start)
+                                           return NSOrderedAscending;
+                                       else if (((WMATweetEntity *)obj1).start > ((WMATweetEntity *)obj2).start)
+                                           return NSOrderedDescending;
+                                       else
+                                           return NSOrderedSame;
+                                   }];
 		}
 		NSInteger rangeStartOffset = 0;
 		
