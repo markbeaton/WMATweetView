@@ -546,7 +546,7 @@
 				entityColor = userMentionColor;
 				entityFont = _userMentionFontRef;
 			}
-            else if ([entity isKindOfClass:[WMATweetAmpEntity class]])
+			else if ([entity isKindOfClass:[WMATweetAmpEntity class]])
 			{
 				entityColor = textColor;
 				entityFont = _textFontRef;
