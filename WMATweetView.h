@@ -118,6 +118,7 @@ typedef void (^URLEntityTappedCallbackBlock)(WMATweetURLEntity *entity, NSUInteg
 typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetHashtagEntity *entity, NSUInteger numberOfTouches);
 typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *entity, NSUInteger numberOfTouches);
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSString *text;
+@property (nonatomic, SAFE_ARC_PROP_RETAIN) NSDictionary *tweet;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *entities;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIColor *textColor;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIFont *textFont;
